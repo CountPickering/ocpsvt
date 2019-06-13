@@ -49,7 +49,7 @@ The playbooks also creates the following VM which provides additional infrastruc
 - the playbooks work from a non privileged account. It will make your life easier if you work from an account named **core** because: 
   - RH CoreOS builtin account is '**core'**
   - a user with the same name as the user who runs the playbooks on the ansible box is created on non CoreOS VMs
-  - Populate the variable .**/group_vars/vars/vault.yml:vault.ssh_key** with the default public key of the user who will run the playbooks (~/.ssh/id_rsa.pub)
+  - Populate the variable .**/group_vars/all/vault.yml:vault.ssh_key** with the default public key of the user who will run the playbooks (~/.ssh/id_rsa.pub)
 - Make sure the user who runs the playbooks can sudo without a password on the ansible box
   - to be completed (see Linux doc, sudo)
 
@@ -77,6 +77,8 @@ While the installation runs configure a password for the root account. You don;t
 
 Once the installation is finished, log in the VM (root account) and perform the following tasks:
 
+**RHEL:**
+
 - change the hostname of the template giving it a name that you will recognize in your Red Hat Account :
 
   `nmcli general hostname=hpe-rhel760`
@@ -88,6 +90,29 @@ Once the installation is finished, log in the VM (root account) and perform the 
 - update the machine
 
   `yum update -y`
+
+- install the cloud-init package that takes the VMWare guestinfo interface as a data source
+
+  `yum install -y https://github.com/vmware/cloud-init-vmware-guestinfo/releases/download/v1.1.0/cloud-init-vmware-guestinfo-1.1.0-1.el7.noarch.rpm`
+
+- clear the bash history
+
+  `history -c`
+
+- shutdown the machine
+
+  `shutdown -h now`
+
+**CentOS:**
+
+- update the machine and install open-vm-tools
+
+  `yum update -y && yum update open-vm-tools -y`
+
+- install PyVmomi and netaddr
+
+  `pip3 install --upgrade pyvmomi`
+  `dnf install python3-netaddr`
 
 - install the cloud-init package that takes the VMWare guestinfo interface as a data source
 
@@ -127,7 +152,7 @@ cd /kits
 wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.1.0.tar.gz
 wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.0.tar.gz
 wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/latest/rhcos-4.1.0-x86_64-vmware.ova
-tar -xvf ocp_installer_path: /kits/openshift-install
+tar -xvf openshift-install-linux-4.1.0.tar.gz
 ```
 
 Download your pull secret from this page: <https://cloud.redhat.com/openshift/install/vsphere/user-provisioned>.  You will use your pull secret to set a value to the variable **group_vars/all/vault.yml:vault.pull_secret**
@@ -180,7 +205,8 @@ Make a copy of hosts.sample (name the copy **hosts**) and make the modification 
 Perform the following commands on your ansible machine
 
 ```
-cd ~/ocpsvt ansible-playbook –I hosts site.yml
+cd ~/ocpsvt
+ansible-playbook –i hosts site.yml
 ```
 
 Depending on your hardware and the load, it takes approximately 20mns for the playbook to finish successfully,
